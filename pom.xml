@@ -123,6 +123,23 @@
 			<artifactId>testcontainers-postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit</artifactId>
+			<version>1.4.1</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.f4b6a3</groupId>
+			<artifactId>uuid-creator</artifactId>
+			<version>6.1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
