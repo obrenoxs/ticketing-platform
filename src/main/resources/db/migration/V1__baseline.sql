@@ -1,0 +1,1 @@
+-- Baseline: marks the start of the schema history.
