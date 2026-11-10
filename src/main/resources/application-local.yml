@@ -1,3 +1,7 @@
 logging:
   level:
     dev.obrenoxs.ticketing: DEBUG
+
+app:
+  rate-limit:
+    enabled: false
