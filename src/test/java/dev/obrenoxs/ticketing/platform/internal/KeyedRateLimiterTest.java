@@ -1,6 +1,7 @@
 package dev.obrenoxs.ticketing.platform.internal;
 
 import dev.obrenoxs.ticketing.platform.api.AppProperties;
+import dev.obrenoxs.ticketing.platform.api.RateLimitPolicy;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicLong;

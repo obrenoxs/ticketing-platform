@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.function.LongSupplier;
 
 import dev.obrenoxs.ticketing.platform.api.AppProperties;
+import dev.obrenoxs.ticketing.platform.api.RateLimitPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
