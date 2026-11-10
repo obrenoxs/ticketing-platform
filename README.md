@@ -170,11 +170,13 @@ docs/                             # regras de negócio, modelo de dados e arquit
 - [Modelo de dados (DBML)](docs/ticketing-model.dbml), importável no [dbdiagram.io](https://dbdiagram.io)
 - [Diagramas de arquitetura](docs/architecture/)
 - [Fluxo de Git](docs/git-workflow.md)
+- [Módulo `platform`: o que está implementado](docs/platform.md)
 
 ## Roadmap
 
 - [x] Fundação: projeto, banco, migrações, testes, tratamento de erros, segurança provisória, CI
-- [ ] `platform`: configuração, limite de requisições, cache, idempotência, outbox
+- [x] `platform` (parte 1): configuração tipada, ids UUID v7, relógio do banco, limite de requisições, `X-Request-Id` e cache com TTL macio e duro
+- [ ] `platform` (parte 2): idempotência e outbox
 - [ ] `auth`: cadastro, login, tokens, papéis
 - [ ] `catalog`: eventos, lotes e leitura pública
 - [ ] `sales`: reserva (versão ingênua como linha de base)
