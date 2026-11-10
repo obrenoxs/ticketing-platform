@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" font-family="Helvetica, Arial, sans-serif" font-size="14">
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker>
+<marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b45309"/></marker>
+</defs>
+<rect width="900" height="560" fill="#ffffff"/>
+<text x="450" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#0f172a">Monólito modular: módulos e dependências</text>
+<g stroke="#334155" stroke-width="1.5">
+<rect x="40" y="70" width="140" height="56" rx="8" fill="#e0f2fe"/>
+<rect x="260" y="70" width="140" height="56" rx="8" fill="#e0f2fe"/>
+<rect x="480" y="70" width="140" height="56" rx="8" fill="#e0f2fe"/>
+<rect x="260" y="230" width="140" height="56" rx="8" fill="#e0f2fe"/>
+<rect x="520" y="230" width="140" height="56" rx="8" fill="#e0f2fe"/>
+<rect x="700" y="70" width="160" height="56" rx="8" fill="#fef3c7"/>
+<rect x="700" y="230" width="160" height="56" rx="8" fill="#fef3c7"/>
+<rect x="40" y="440" width="820" height="50" rx="8" fill="#f1f5f9"/>
+<rect x="40" y="500" width="820" height="40" rx="8" fill="#f1f5f9"/>
+</g>
+<g text-anchor="middle" fill="#0f172a" font-weight="bold">
+<text x="110" y="103">auth</text><text x="330" y="103">catalog</text><text x="550" y="103">sales</text>
+<text x="330" y="263">payment</text><text x="590" y="263">ticketing</text>
+<text x="780" y="103">notification</text><text x="780" y="263">outbox (platform)</text>
+<text x="450" y="470">platform: outbox, idempotência, rate limit, relógio, configuração</text>
+<text x="450" y="525">observability: métricas técnicas e de negócio (Actuator, Prometheus)</text>
+</g>
+<g stroke="#334155" stroke-width="1.8" fill="none" marker-end="url(#a)">
+<path d="M480 98 L400 98"/>
+<path d="M550 126 L400 245"/>
+<path d="M400 258 L520 258"/>
+<path d="M590 230 L560 126"/>
+<path d="M520 275 L400 275"/>
+</g>
+<g stroke="#b45309" stroke-width="1.8" fill="none" stroke-dasharray="6 4" marker-end="url(#o)">
+<path d="M660 245 L700 245"/>
+<path d="M780 230 L780 126"/>
+<path d="M400 238 Q560 190 700 235"/>
+</g>
+<g font-size="12" fill="#334155">
+<text x="440" y="90" text-anchor="middle">consulta</text>
+<text x="460" y="205">confirma reserva</text>
+<text x="460" y="250">cria ingressos</text>
+<text x="475" y="296" text-anchor="middle">pede estorno</text>
+<text x="600" y="185">devolve contador e lote</text>
+<text x="690" y="206" fill="#b45309">tarefas</text>
+<text x="790" y="180" fill="#b45309">consome</text>
+</g>
+<g font-size="12" fill="#475569">
+<text x="40" y="170">auth não depende de ninguém: os outros só conhecem o account_id do token.</text>
+<text x="40" y="190">Setas contínuas: chamadas síncronas via portas (interfaces pequenas em api).</text>
+<text x="40" y="210" fill="#b45309">Setas tracejadas: consequências assíncronas pelo outbox (futuro tópico Kafka).</text>
+<text x="40" y="360">O ciclo payment, ticketing e sales é contido por portas pequenas; o fluxo de aprovação</text>
+<text x="40" y="380">fica num único orquestrador dentro de payment. ArchUnit valida as regras no build.</text>
+<text x="40" y="410">platform e observability são transversais e não conhecem módulos de negócio.</text>
+</g>
+</svg>

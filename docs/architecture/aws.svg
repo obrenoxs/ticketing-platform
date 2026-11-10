@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Helvetica, Arial, sans-serif" font-size="14">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#334155"/></marker></defs>
+<rect width="900" height="520" fill="#ffffff"/>
+<text x="450" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#0f172a">Arquitetura na AWS (us-east-1, janela curta de testes)</text>
+<rect x="30" y="50" width="840" height="450" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+<text x="45" y="72" font-size="12" fill="#475569">VPC</text>
+<rect x="50" y="85" width="500" height="190" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+<text x="65" y="105" font-size="12" fill="#047857">Sub-rede pública (sem NAT Gateway)</text>
+<rect x="50" y="300" width="500" height="170" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+<text x="65" y="320" font-size="12" fill="#b91c1c">Sub-rede privada (sem IP público)</text>
+<g stroke="#334155" stroke-width="1.5">
+<rect x="70" y="125" width="150" height="70" rx="8" fill="#e0f2fe"/>
+<rect x="260" y="125" width="270" height="70" rx="8" fill="#e0f2fe"/>
+<rect x="260" y="205" width="270" height="55" rx="8" fill="#e0f2fe"/>
+<rect x="150" y="345" width="260" height="70" rx="8" fill="#fde68a"/>
+<rect x="620" y="125" width="220" height="60" rx="8" fill="#ede9fe"/>
+<rect x="620" y="215" width="220" height="60" rx="8" fill="#ede9fe"/>
+<rect x="620" y="305" width="220" height="60" rx="8" fill="#ede9fe"/>
+<rect x="620" y="395" width="220" height="60" rx="8" fill="#ede9fe"/>
+</g>
+<g text-anchor="middle" fill="#0f172a" font-weight="bold">
+<text x="145" y="155">EC2 k6</text><text x="145" y="175" font-weight="normal" font-size="12">gerador de carga</text>
+<text x="395" y="155">EC2 t3.small: aplicação</text><text x="395" y="175" font-weight="normal" font-size="12">Spring Boot (+ segunda instância opcional)</text>
+<text x="395" y="230">Redis em contêiner</text><text x="395" y="248" font-weight="normal" font-size="12">experimento de cache</text>
+<text x="280" y="375">RDS db.t3.micro</text><text x="280" y="395" font-weight="normal" font-size="12">PostgreSQL 17</text>
+<text x="730" y="160">S3 privado</text>
+<text x="730" y="250">Parameter Store</text><text x="730" y="337">CloudWatch + Budgets</text><text x="730" y="427">ALB (etapa final opcional)</text>
+</g>
+<g font-size="12" fill="#475569" text-anchor="middle">
+<text x="730" y="176">notas fiscais em PDF</text><text x="730" y="266">segredos (SecureString)</text>
+<text x="730" y="355">métricas básicas e alarme</text><text x="730" y="445">duas instâncias de app</text>
+</g>
+<g stroke="#334155" stroke-width="1.8" fill="none" marker-end="url(#a)">
+<path d="M220 160 L260 160"/>
+<path d="M395 195 L395 205" />
+<path d="M330 195 L300 345"/>
+<path d="M530 150 L620 150"/>
+<path d="M530 175 L620 240"/>
+</g>
+<text x="450" y="490" text-anchor="middle" font-size="12" fill="#475569">Após o teste: desligar tudo e conferir que não sobrou instância, banco, volume nem IP.</text>
+</svg>
