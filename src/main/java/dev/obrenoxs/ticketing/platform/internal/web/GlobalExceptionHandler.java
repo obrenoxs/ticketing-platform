@@ -4,6 +4,7 @@ import dev.obrenoxs.ticketing.platform.api.BusinessException;
 import dev.obrenoxs.ticketing.platform.api.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatusCode.valueOf(errorCode.status()), ex.getMessage());
         problem.setProperty("code", errorCode.name());
+        problem.setProperty("requestId", MDC.get("requestId"));
         return problem;
     }
 
@@ -34,6 +36,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
         problem.setProperty("code", "INTERNAL_ERROR");
+        problem.setProperty("requestId", MDC.get("requestId"));
         return problem;
     }
 
@@ -52,6 +55,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         "message", String.valueOf(error.getDefaultMessage())))
                 .toList();
         problem.setProperty("errors", errors);
+        problem.setProperty("requestId", MDC.get("requestId"));
+
 
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
