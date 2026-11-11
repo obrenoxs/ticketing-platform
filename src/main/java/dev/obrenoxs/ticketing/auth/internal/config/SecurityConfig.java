@@ -3,6 +3,7 @@ package dev.obrenoxs.ticketing.auth.internal.config;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -18,6 +19,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/signup").permitAll()
                         .anyRequest().denyAll());
         return http.build();
     }

@@ -52,7 +52,7 @@ public class Account extends AssignedIdEntity {
                                    byte[] cpfEncrypted, int cpfKeyVersion, byte[] cpfHmac,
                                    Instant now) {
         Account account = new Account(id);
-        account.email = email.trim().toLowerCase(Locale.ROOT);
+        account.email = normalizeEmail(email);
         account.name = name.trim();
         account.passwordHash = passwordHash;
         account.role = Role.BUYER;
@@ -71,6 +71,10 @@ public class Account extends AssignedIdEntity {
         }
         this.status = AccountStatus.ACTIVE;
         this.updatedAt = now;
+    }
+
+    public static String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     public String getEmail() { return email; }
