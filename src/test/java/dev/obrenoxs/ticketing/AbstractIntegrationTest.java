@@ -9,7 +9,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {
         "CPF_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         "CPF_HMAC_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        "JWT_SIGNING_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        "JWT_SIGNING_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        "app.auth.bcrypt-cost=4"
 })
 public abstract class AbstractIntegrationTest {
 }

@@ -33,6 +33,7 @@ logging:
 
 app:
   auth:
+    bcrypt-cost: 10
     secrets:
       cpf-encryption-key: ${CPF_ENCRYPTION_KEY:}
       cpf-hmac-key: ${CPF_HMAC_KEY:}
