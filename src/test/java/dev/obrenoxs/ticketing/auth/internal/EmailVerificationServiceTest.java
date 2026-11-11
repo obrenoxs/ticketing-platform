@@ -88,7 +88,7 @@ class EmailVerificationServiceTest {
         when(tokens.findByTokenHash(any())).thenReturn(Optional.of(token));
         when(accounts.findById(ACCOUNT_ID)).thenReturn(Optional.of(active));
 
-        service.verify("abc"); // não lança
+        service.verify("abc");
 
         verify(accounts, never()).activate(any(), any());
     }

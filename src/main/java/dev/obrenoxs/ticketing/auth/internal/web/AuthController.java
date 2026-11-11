@@ -1,14 +1,16 @@
 package dev.obrenoxs.ticketing.auth.internal.web;
 
-import dev.obrenoxs.ticketing.auth.internal.AuthenticatedAccount;
-import dev.obrenoxs.ticketing.auth.internal.EmailVerificationService;
-import dev.obrenoxs.ticketing.auth.internal.LoginService;
-import dev.obrenoxs.ticketing.auth.internal.SignupService;
+import dev.obrenoxs.ticketing.auth.internal.*;
+import dev.obrenoxs.ticketing.auth.internal.domain.Role;
 import dev.obrenoxs.ticketing.platform.api.RateLimitPolicy;
 import dev.obrenoxs.ticketing.platform.api.RateLimited;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -20,11 +22,13 @@ class AuthController {
     private final SignupService signupService;
     private final EmailVerificationService verificationService;
     private final LoginService loginService;
+    private final AccessTokenService accessTokenService;
 
-    public AuthController(SignupService signupService, EmailVerificationService verificationService, LoginService loginService) {
+    public AuthController(SignupService signupService, EmailVerificationService verificationService, LoginService loginService, AccessTokenService accessTokenService) {
         this.signupService = signupService;
         this.verificationService = verificationService;
         this.loginService = loginService;
+        this.accessTokenService = accessTokenService;
     }
 
     @GetMapping("/verify-email")
@@ -43,6 +47,13 @@ class AuthController {
     @RateLimited(RateLimitPolicy.LOGIN)
     ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthenticatedAccount account = loginService.login(request.email(), request.password());
-        return ResponseEntity.ok(new LoginResponse(account.accountId(), account.role()));
+        return ResponseEntity.ok(LoginResponse.bearer(accessTokenService.issue(account)));
+    }
+
+    @GetMapping("/me")
+    ResponseEntity<MeResponse> me(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(new MeResponse(
+                UUID.fromString(jwt.getSubject()),
+                Role.valueOf(jwt.getClaimAsString(AccessTokenService.ROLE_CLAIM))));
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -22,8 +23,9 @@ class AuthControllerTest {
     private final SignupService service = mock(SignupService.class);
     private final EmailVerificationService verificationService = mock(EmailVerificationService.class);
     private final LoginService loginService = mock(LoginService.class);
+    private final AccessTokenService accessTokenService = mock(AccessTokenService.class);
     private final MockMvc mvc = MockMvcBuilders
-            .standaloneSetup(new AuthController(service, verificationService, loginService))
+            .standaloneSetup(new AuthController(service, verificationService, loginService, accessTokenService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
@@ -85,21 +87,6 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldReturn200WithAccountOnLogin() throws Exception {
-        UUID id = UUID.randomUUID();
-        when(loginService.login("ana@example.com", "password-123"))
-                .thenReturn(new AuthenticatedAccount(id, Role.BUYER));
-
-        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {"email":"ana@example.com","password":"password-123"}
-                            """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountId").value(id.toString()))
-                .andExpect(jsonPath("$.role").value("BUYER"));
-    }
-
-    @Test
     void shouldReturn401OnInvalidCredentials() throws Exception {
         when(loginService.login(any(), any())).thenThrow(new BusinessException(
                 AuthErrorCode.INVALID_CREDENTIALS, "Invalid email or password."));
@@ -120,5 +107,22 @@ class AuthControllerTest {
                             """))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(loginService);
+    }
+
+    @Test
+    void shouldReturn200WithTokenOnLogin() throws Exception {
+        AuthenticatedAccount account = new AuthenticatedAccount(UUID.randomUUID(), Role.BUYER);
+        IssuedAccessToken token = new IssuedAccessToken("jwt-value", Instant.parse("2026-11-11T12:15:00Z"));
+        when(loginService.login("ana@example.com", "password-123")).thenReturn(account);
+        when(accessTokenService.issue(account)).thenReturn(token);
+
+        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"email":"ana@example.com","password":"password-123"}
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("jwt-value"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.expiresAt").exists());
     }
 }

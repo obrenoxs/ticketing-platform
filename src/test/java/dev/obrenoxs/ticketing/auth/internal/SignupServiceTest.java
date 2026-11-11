@@ -38,7 +38,7 @@ class SignupServiceTest {
             new CpfCipher(Map.of(1, KEY), 1), new CpfBlindIndex(KEY),
             UUID::randomUUID, () -> NOW, notifier,
             new TransactionTemplate(mock(PlatformTransactionManager.class)),
-            new AuthProperties(4, Duration.ofHours(24), "http://localhost:8080"));
+            new AuthProperties(4, Duration.ofHours(24), "http://localhost:8080", Duration.ofMinutes(15)));
 
     @Test
     void shouldCreateAccountAndTokenForNewUser() {

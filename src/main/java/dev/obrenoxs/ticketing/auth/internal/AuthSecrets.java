@@ -22,7 +22,7 @@ public record AuthSecrets(String cpfEncryptionKey, String cpfHmacKey, String jwt
         return Base64.getDecoder().decode(cpfHmacKey);
     }
 
-    byte[] jwtSigningKeyBytes() {
+    public byte[] jwtSigningKeyBytes() {
         return Base64.getDecoder().decode(jwtSigningKey);
     }
 

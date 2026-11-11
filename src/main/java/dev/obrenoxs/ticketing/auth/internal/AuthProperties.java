@@ -15,5 +15,6 @@ import java.time.Duration;
 public record AuthProperties(
         @Min(4) @Max(15) @DefaultValue("10") int bcryptCost,
         @NotNull @DefaultValue("24h") Duration emailVerificationTtl,
-        @NotBlank @DefaultValue("http://localhost:8080") String publicBaseUrl) {
+        @NotBlank @DefaultValue("http://localhost:8080") String publicBaseUrl,
+        @DefaultValue("15m") Duration accessTokenTtl) {
 }

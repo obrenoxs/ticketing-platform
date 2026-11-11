@@ -1,5 +1,6 @@
 package dev.obrenoxs.ticketing.auth.internal;
 
+import com.jayway.jsonpath.JsonPath;
 import dev.obrenoxs.ticketing.AbstractIntegrationTest;
 import dev.obrenoxs.ticketing.auth.internal.domain.Account;
 import dev.obrenoxs.ticketing.auth.internal.repository.AccountRepository;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,14 +50,21 @@ class LoginIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldLoginWithActiveAccount() throws Exception {
+    void shouldUseTheTokenReceivedOnLoginToCallAProtectedRoute() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
         Account account = savedAccount(email, true);
 
-        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+        String body = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(json(email, "password-123")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accountId").value(account.getId().toString()));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andReturn().getResponse().getContentAsString();
+        String token = JsonPath.read(body, "$.accessToken");
+
+        mvc.perform(get("/auth/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountId").value(account.getId().toString()))
+                .andExpect(jsonPath("$.role").value("BUYER"));
     }
 
     @Test

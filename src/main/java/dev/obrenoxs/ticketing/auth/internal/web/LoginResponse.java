@@ -1,7 +1,11 @@
 package dev.obrenoxs.ticketing.auth.internal.web;
 
-import dev.obrenoxs.ticketing.auth.internal.domain.Role;
+import dev.obrenoxs.ticketing.auth.internal.IssuedAccessToken;
+import java.time.Instant;
 
-import java.util.UUID;
+public record LoginResponse(String accessToken, String tokenType, Instant expiresAt) {
 
-public record LoginResponse(UUID accountId, Role role) {}
+    static LoginResponse bearer(IssuedAccessToken token) {
+        return new LoginResponse(token.value(), "Bearer", token.expiresAt());
+    }
+}
