@@ -30,3 +30,10 @@ management:
 logging:
   pattern:
     level: "%5p [%X{requestId:-}]"
+
+app:
+  auth:
+    secrets:
+      cpf-encryption-key: ${CPF_ENCRYPTION_KEY:}
+      cpf-hmac-key: ${CPF_HMAC_KEY:}
+      jwt-signing-key: ${JWT_SIGNING_KEY:}
