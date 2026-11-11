@@ -65,17 +65,19 @@ class LoginIntegrationTest extends AbstractIntegrationTest {
         savedAccount(activeEmail, true);
         savedAccount(pendingEmail, false);
 
-        String wrongPassword = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content(json(activeEmail, "wrong-password")))
-                .andExpect(status().isUnauthorized()).andReturn().getResponse().getContentAsString();
-        String unknownEmail = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content(json(UUID.randomUUID() + "@example.com", "password-123")))
-                .andExpect(status().isUnauthorized()).andReturn().getResponse().getContentAsString();
-        String pending = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content(json(pendingEmail, "password-123")))
-                .andExpect(status().isUnauthorized()).andReturn().getResponse().getContentAsString();
+        String wrongPassword = failureWithoutRequestId(activeEmail, "wrong-password");
+        String unknownEmail = failureWithoutRequestId(UUID.randomUUID() + "@example.com", "password-123");
+        String pending = failureWithoutRequestId(pendingEmail, "password-123");
 
         assertThat(unknownEmail).isEqualTo(wrongPassword);
         assertThat(pending).isEqualTo(wrongPassword);
+    }
+
+    private String failureWithoutRequestId(String email, String password) throws Exception {
+        String body = mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(json(email, password)))
+                .andExpect(status().isUnauthorized())
+                .andReturn().getResponse().getContentAsString();
+        return body.replaceAll("\"requestId\":\"[^\"]*\"", "\"requestId\":\"-\"");
     }
 }
