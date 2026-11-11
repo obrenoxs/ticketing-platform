@@ -1,6 +1,9 @@
 package dev.obrenoxs.ticketing.auth.internal.web;
 
+import dev.obrenoxs.ticketing.auth.internal.AuthErrorCode;
+import dev.obrenoxs.ticketing.auth.internal.EmailVerificationService;
 import dev.obrenoxs.ticketing.auth.internal.SignupService;
+import dev.obrenoxs.ticketing.platform.api.BusinessException;
 import dev.obrenoxs.ticketing.platform.internal.web.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -9,13 +12,16 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AuthControllerTest {
 
     private final SignupService service = mock(SignupService.class);
-    private final MockMvc mvc = MockMvcBuilders.standaloneSetup(new AuthController(service))
+    private final EmailVerificationService verificationService = mock(EmailVerificationService.class);
+    private final MockMvc mvc = MockMvcBuilders
+            .standaloneSetup(new AuthController(service, verificationService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
@@ -49,5 +55,30 @@ class AuthControllerTest {
                         .content(body("Ana", "not-an-email", "short", "52998224725")))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void shouldReturn200WhenTokenIsValid() throws Exception {
+        mvc.perform(get("/auth/verify-email").param("token", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").exists());
+        verify(verificationService).verify("abc");
+    }
+
+    @Test
+    void shouldReturn400WhenTokenIsInvalid() throws Exception {
+        doThrow(new BusinessException(AuthErrorCode.INVALID_VERIFICATION_TOKEN,
+                "Invalid or expired verification link."))
+                .when(verificationService).verify("bad");
+
+        mvc.perform(get("/auth/verify-email").param("token", "bad"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_VERIFICATION_TOKEN"));
+    }
+
+    @Test
+    void shouldReturn400WhenTokenParameterIsMissing() throws Exception {
+        mvc.perform(get("/auth/verify-email"))
+                .andExpect(status().isBadRequest());
     }
 }
