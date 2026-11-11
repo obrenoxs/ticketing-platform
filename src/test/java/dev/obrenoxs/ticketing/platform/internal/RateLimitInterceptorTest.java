@@ -29,7 +29,7 @@ class RateLimitInterceptorTest {
     }
 
     private MockMvc mvc(boolean enabled) {
-        AppProperties.RateLimit cfg = new AppProperties.RateLimit(enabled, 60, 2, 10, 20);
+        AppProperties.RateLimit cfg = new AppProperties.RateLimit(enabled, 60, 2, 10, 20, 10, 5, 5);
         AtomicLong now = new AtomicLong();
         KeyedRateLimiter limiter = new KeyedRateLimiter(cfg, now::get);
         AppProperties props = new AppProperties(null, null, null, null, null, cfg);

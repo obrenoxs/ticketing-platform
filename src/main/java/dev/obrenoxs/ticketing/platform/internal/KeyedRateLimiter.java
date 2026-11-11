@@ -6,15 +6,16 @@ import java.time.Duration;
 import java.util.function.LongSupplier;
 
 import dev.obrenoxs.ticketing.platform.api.AppProperties;
+import dev.obrenoxs.ticketing.platform.api.AttemptLimiter;
 import dev.obrenoxs.ticketing.platform.api.RateLimitPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-class KeyedRateLimiter {
+class KeyedRateLimiter implements AttemptLimiter {
 
     private static final long MAX_KEYS = 100_000;
-    private static final Duration IDLE_EVICTION = Duration.ofMinutes(2);
+    private static final Duration IDLE_EVICTION = Duration.ofHours(1);
 
     private final Cache<String, TokenBucket> buckets = Caffeine.newBuilder()
             .maximumSize(MAX_KEYS)
@@ -35,25 +36,51 @@ class KeyedRateLimiter {
     }
 
     RateLimitDecision tryAcquire(RateLimitPolicy policy, String identifier) {
-        String key = policy.name() + ":" + identifier;
-        TokenBucket bucket = buckets.get(key, k -> newBucket(policy));
+        TokenBucket bucket = bucket(policy, identifier);
         if (bucket.tryAcquire()) {
             return RateLimitDecision.permit();
         }
         return RateLimitDecision.deny(bucket.timeUntilNextToken());
     }
 
-    private TokenBucket newBucket(RateLimitPolicy policy) {
-        int perMinute = perMinute(policy);
-        return new TokenBucket(perMinute, perMinute / 60.0, nanoClock);
+    @Override
+    public Duration blockedFor(RateLimitPolicy policy, String key) {
+        if (!limits.enabled()) {
+            return Duration.ZERO;
+        }
+        return bucket(policy, key).timeUntilNextToken();
     }
 
-    private int perMinute(RateLimitPolicy policy) {
+    @Override
+    public void recordFailure(RateLimitPolicy policy, String key) {
+        if (limits.enabled()) {
+            bucket(policy, key).tryAcquire();
+        }
+    }
+
+    private TokenBucket bucket(RateLimitPolicy policy, String identifier) {
+        return buckets.get(policy.name() + ":" + identifier, k -> newBucket(policy));
+    }
+
+    private TokenBucket newBucket(RateLimitPolicy policy) {
+        int capacity = capacity(policy);
+        long periodSeconds = period(policy).toSeconds();
+        return new TokenBucket(capacity, capacity / (double) periodSeconds, nanoClock);
+    }
+
+    private Duration period(RateLimitPolicy policy) {
+        return policy == RateLimitPolicy.SIGNUP ? Duration.ofHours(1) : Duration.ofMinutes(1);
+    }
+
+    private int capacity(RateLimitPolicy policy) {
         return switch (policy) {
             case READS -> limits.readsPerMinute();
             case RESERVE -> limits.reservesPerMinute();
             case PAYMENT -> limits.paymentsPerMinute();
             case NOTIFICATIONS -> limits.notificationsPerMinute();
+            case LOGIN -> limits.loginPerMinute();
+            case LOGIN_FAILURE -> limits.loginFailuresPerMinute();
+            case SIGNUP -> limits.signupPerHour();
         };
     }
 }

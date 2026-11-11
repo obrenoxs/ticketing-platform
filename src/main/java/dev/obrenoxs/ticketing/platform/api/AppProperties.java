@@ -46,5 +46,8 @@ public record AppProperties(
             @Min(1) @DefaultValue("60") int readsPerMinute,
             @Min(1) @DefaultValue("5") int reservesPerMinute,
             @Min(1) @DefaultValue("10") int paymentsPerMinute,
-            @Min(1) @DefaultValue("20") int notificationsPerMinute) {}
+            @Min(1) @DefaultValue("20") int notificationsPerMinute,
+            @Min(1) @DefaultValue("10") int loginPerMinute,
+            @Min(1) @DefaultValue("5") int loginFailuresPerMinute,
+            @Min(1) @DefaultValue("5") int signupPerHour) {}
 }

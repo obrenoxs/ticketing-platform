@@ -40,7 +40,8 @@ class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        RateLimitDecision decision = limiter.tryAcquire(annotation.value(), identify(request));
+        String identifier = annotation.value().byIp() ? ipOf(request) : identify(request);
+        RateLimitDecision decision = limiter.tryAcquire(annotation.value(), identifier);
         if (decision.allowed()) {
             return true;
         }
@@ -55,6 +56,10 @@ class RateLimitInterceptor implements HandlerInterceptor {
         if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
             return "acc:" + auth.getName();
         }
+        return ipOf(request);
+    }
+
+    private String ipOf(HttpServletRequest request) {
         return "ip:" + request.getRemoteAddr();
     }
 }

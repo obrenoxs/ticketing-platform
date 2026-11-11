@@ -2,6 +2,7 @@ package dev.obrenoxs.ticketing.platform.internal.web;
 
 import dev.obrenoxs.ticketing.platform.api.BusinessException;
 import dev.obrenoxs.ticketing.platform.api.ErrorCode;
+import dev.obrenoxs.ticketing.platform.api.TooManyRequestsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -38,6 +39,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problem.setProperty("code", "INTERNAL_ERROR");
         problem.setProperty("requestId", MDC.get("requestId"));
         return problem;
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ProblemDetail> handleTooManyRequests(TooManyRequestsException ex) {
+        ErrorCode errorCode = ex.getErrorCode();
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatusCode.valueOf(errorCode.status()), ex.getMessage());
+        problem.setProperty("code", errorCode.name());
+        long seconds = Math.max(1, (long) Math.ceil(ex.getRetryAfter().toMillis() / 1000.0));
+        return ResponseEntity.status(errorCode.status())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(seconds))
+                .body(problem);
     }
 
     @Override
