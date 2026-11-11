@@ -62,7 +62,7 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldActivateAccountWhenLinkIsOpened() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
-        String token = signupAndGetToken(email, "52998224725");
+        String token = signupAndGetToken(email, TestCpfs.random());
 
         mvc.perform(get("/auth/verify-email").param("token", token)).andExpect(status().isOk());
 
@@ -98,7 +98,7 @@ class EmailVerificationIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldHandleConcurrentClicksOnTheSameLink() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
-        String token = signupAndGetToken(email, "11144477735");
+        String token = signupAndGetToken(email, TestCpfs.random());
 
         ExecutorService pool = Executors.newFixedThreadPool(8);
         List<Future<Integer>> results = new ArrayList<>();

@@ -41,14 +41,14 @@ class SignupIntegrationTest extends AbstractIntegrationTest {
     @Test
     void shouldReturnIdenticalResponseForNewAndExistingUsers() throws Exception {
         String email = UUID.randomUUID() + "@example.com";
-        String cpf = "52998224725";
+        String cpf = TestCpfs.random();
 
         String first = mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
                         .content(json(email, cpf)))
                 .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
 
         String duplicateEmail = mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
-                        .content(json(email, "11144477735")))
+                        .content(json(email, TestCpfs.random())))
                 .andExpect(status().isAccepted()).andReturn().getResponse().getContentAsString();
 
         String duplicateCpf = mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
