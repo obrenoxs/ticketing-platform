@@ -1,14 +1,15 @@
 package dev.obrenoxs.ticketing.auth.internal.web;
 
-import dev.obrenoxs.ticketing.auth.internal.AuthErrorCode;
-import dev.obrenoxs.ticketing.auth.internal.EmailVerificationService;
-import dev.obrenoxs.ticketing.auth.internal.SignupService;
+import dev.obrenoxs.ticketing.auth.internal.*;
+import dev.obrenoxs.ticketing.auth.internal.domain.Role;
 import dev.obrenoxs.ticketing.platform.api.BusinessException;
 import dev.obrenoxs.ticketing.platform.internal.web.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,8 +21,9 @@ class AuthControllerTest {
 
     private final SignupService service = mock(SignupService.class);
     private final EmailVerificationService verificationService = mock(EmailVerificationService.class);
+    private final LoginService loginService = mock(LoginService.class);
     private final MockMvc mvc = MockMvcBuilders
-            .standaloneSetup(new AuthController(service, verificationService))
+            .standaloneSetup(new AuthController(service, verificationService, loginService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
@@ -80,5 +82,43 @@ class AuthControllerTest {
     void shouldReturn400WhenTokenParameterIsMissing() throws Exception {
         mvc.perform(get("/auth/verify-email"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturn200WithAccountOnLogin() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(loginService.login("ana@example.com", "password-123"))
+                .thenReturn(new AuthenticatedAccount(id, Role.BUYER));
+
+        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"email":"ana@example.com","password":"password-123"}
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accountId").value(id.toString()))
+                .andExpect(jsonPath("$.role").value("BUYER"));
+    }
+
+    @Test
+    void shouldReturn401OnInvalidCredentials() throws Exception {
+        when(loginService.login(any(), any())).thenThrow(new BusinessException(
+                AuthErrorCode.INVALID_CREDENTIALS, "Invalid email or password."));
+
+        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"email":"ana@example.com","password":"wrong"}
+                            """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void shouldReturn400WhenLoginBodyIsIncomplete() throws Exception {
+        mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"email":"","password":""}
+                            """))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(loginService);
     }
 }

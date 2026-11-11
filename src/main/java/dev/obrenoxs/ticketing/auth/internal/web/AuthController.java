@@ -1,7 +1,11 @@
 package dev.obrenoxs.ticketing.auth.internal.web;
 
+import dev.obrenoxs.ticketing.auth.internal.AuthenticatedAccount;
 import dev.obrenoxs.ticketing.auth.internal.EmailVerificationService;
+import dev.obrenoxs.ticketing.auth.internal.LoginService;
 import dev.obrenoxs.ticketing.auth.internal.SignupService;
+import dev.obrenoxs.ticketing.platform.api.RateLimitPolicy;
+import dev.obrenoxs.ticketing.platform.api.RateLimited;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +19,12 @@ class AuthController {
 
     private final SignupService signupService;
     private final EmailVerificationService verificationService;
+    private final LoginService loginService;
 
-    AuthController(SignupService signupService, EmailVerificationService verificationService) {
+    public AuthController(SignupService signupService, EmailVerificationService verificationService, LoginService loginService) {
         this.signupService = signupService;
         this.verificationService = verificationService;
+        this.loginService = loginService;
     }
 
     @GetMapping("/verify-email")
@@ -31,5 +37,12 @@ class AuthController {
     ResponseEntity<MessageResponse> signup(@Valid @RequestBody SignupRequest request) {
         signupService.signup(request.name(), request.email(), request.password(), request.cpf());
         return ResponseEntity.accepted().body(SIGNUP_RESPONSE);
+    }
+
+    @PostMapping("/login")
+    @RateLimited(RateLimitPolicy.LOGIN)
+    ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        AuthenticatedAccount account = loginService.login(request.email(), request.password());
+        return ResponseEntity.ok(new LoginResponse(account.accountId(), account.role()));
     }
 }
