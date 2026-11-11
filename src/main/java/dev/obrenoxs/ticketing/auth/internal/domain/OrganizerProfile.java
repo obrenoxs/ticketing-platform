@@ -29,6 +29,9 @@ public class OrganizerProfile extends AssignedIdEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    protected OrganizerProfile() {
+    }
+
     private OrganizerProfile(UUID accountId) {
         super(accountId);
     }
