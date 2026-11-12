@@ -51,11 +51,21 @@ public class Account extends AssignedIdEntity {
     public static Account register(UUID id, String email, String name, String passwordHash,
                                    byte[] cpfEncrypted, int cpfKeyVersion, byte[] cpfHmac,
                                    Instant now) {
+        return register(id, email, name, passwordHash, cpfEncrypted, cpfKeyVersion, cpfHmac,
+                now, Role.BUYER);
+    }
+
+    public static Account register(UUID id, String email, String name, String passwordHash,
+                                   byte[] cpfEncrypted, int cpfKeyVersion, byte[] cpfHmac,
+                                   Instant now, Role role) {
+        if (role == Role.ADMIN) {
+            throw new IllegalArgumentException("ADMIN accounts are not created through registration.");
+        }
         Account account = new Account(id);
         account.email = normalizeEmail(email);
         account.name = name.trim();
         account.passwordHash = passwordHash;
-        account.role = Role.BUYER;
+        account.role = role;
         account.status = AccountStatus.PENDING_EMAIL;
         account.cpfEncrypted = cpfEncrypted;
         account.cpfKeyVersion = (short) cpfKeyVersion;

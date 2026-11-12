@@ -1,10 +1,11 @@
 package dev.obrenoxs.ticketing.auth.internal;
 
-import dev.obrenoxs.ticketing.auth.internal.domain.Account;
-import dev.obrenoxs.ticketing.auth.internal.domain.AccountStatus;
-import dev.obrenoxs.ticketing.auth.internal.domain.EmailVerificationToken;
+import dev.obrenoxs.ticketing.auth.internal.domain.*;
 import dev.obrenoxs.ticketing.auth.internal.repository.AccountRepository;
 import dev.obrenoxs.ticketing.auth.internal.repository.EmailVerificationTokenRepository;
+import dev.obrenoxs.ticketing.auth.internal.repository.OrganizerProfileRepository;
+import dev.obrenoxs.ticketing.platform.api.DatabaseClock;
+import dev.obrenoxs.ticketing.platform.api.IdGenerator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class SignupServiceTest {
@@ -28,6 +30,7 @@ class SignupServiceTest {
     private static final byte[] KEY = new byte[32];
 
     private final AccountRepository accounts = mock(AccountRepository.class);
+    private final OrganizerProfileRepository organizerProfiles = mock(OrganizerProfileRepository.class);
     private final EmailVerificationTokenRepository tokens = mock(EmailVerificationTokenRepository.class);
     private final PasswordHasher hasher = spy(new PasswordHasher(4));
     private final List<String> sentLinks = new ArrayList<>();
@@ -38,7 +41,9 @@ class SignupServiceTest {
             new CpfCipher(Map.of(1, KEY), 1), new CpfBlindIndex(KEY),
             UUID::randomUUID, () -> NOW, notifier,
             new TransactionTemplate(mock(PlatformTransactionManager.class)),
-            new AuthProperties(4, Duration.ofHours(24), "http://localhost:8080", Duration.ofMinutes(15), Duration.ofDays(15)));
+            new AuthProperties(4, Duration.ofHours(24), "http://localhost:8080",
+                    Duration.ofMinutes(15), Duration.ofDays(15)),
+           organizerProfiles);
 
     @Test
     void shouldCreateAccountAndTokenForNewUser() {
@@ -98,5 +103,38 @@ class SignupServiceTest {
         service.signup("Ana", "ana@example.com", "password-123", "52998224725");
 
         assertThat(sentLinks).isEmpty();
+    }
+
+    @Test
+    void shouldRefuseOrganizerSignupWithoutPublicNameBeforeDoingAnyWork() {
+        SignupService service = new SignupService(mock(AccountRepository.class),
+                mock(EmailVerificationTokenRepository.class), mock(PasswordHasher.class),
+                mock(CpfCipher.class), mock(CpfBlindIndex.class), mock(IdGenerator.class),
+                mock(DatabaseClock.class), mock(EmailVerificationNotifier.class),
+                mock(TransactionTemplate.class), mock(AuthProperties.class),
+                mock(OrganizerProfileRepository.class));
+
+        assertThatThrownBy(() -> service.signup("Ana", "ana@example.com", "password-123",
+                "11144477735", AccountType.ORGANIZER, " "))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldSaveAPendingProfileWhenSigningUpAnOrganizer() {
+        service.signup("Ana", "ana@example.com", "password-123", "52998224725",
+                AccountType.ORGANIZER, "  Rock Producoes  ");
+
+        ArgumentCaptor<OrganizerProfile> profile = ArgumentCaptor.forClass(OrganizerProfile.class);
+        verify(organizerProfiles).saveAndFlush(profile.capture());
+
+        assertThat(profile.getValue().getStatus()).isEqualTo(OrganizerStatus.PENDING);
+        assertThat(profile.getValue().getPublicName()).isEqualTo("Rock Producoes");
+    }
+
+    @Test
+    void shouldNotCreateAProfileForABuyer() {
+        service.signup("Ana", "ana@example.com", "password-123", "52998224725");
+
+        verify(organizerProfiles, never()).saveAndFlush(any());
     }
 }

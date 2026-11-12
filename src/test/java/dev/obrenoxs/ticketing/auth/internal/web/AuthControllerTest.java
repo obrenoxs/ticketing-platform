@@ -20,13 +20,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class AuthControllerTest {
 
-    private final SignupService service = mock(SignupService.class);
     private final EmailVerificationService verificationService = mock(EmailVerificationService.class);
     private final LoginService loginService = mock(LoginService.class);
     private final AccessTokenService accessTokenService = mock(AccessTokenService.class);
     private final RefreshTokenService refreshTokenService = mock(RefreshTokenService.class);
+    private final SignupService signupService = mock(SignupService.class);
     private final MockMvc mvc = MockMvcBuilders
-            .standaloneSetup(new AuthController(service, verificationService, loginService, accessTokenService, refreshTokenService))
+            .standaloneSetup(new AuthController(signupService, verificationService, loginService, accessTokenService, refreshTokenService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
@@ -42,7 +42,8 @@ class AuthControllerTest {
                         .content(body("Ana", "ana@example.com", "password-123", "529.982.247-25")))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.message").exists());
-        verify(service).signup("Ana", "ana@example.com", "password-123", "529.982.247-25");
+        verify(signupService).signup("Ana", "ana@example.com", "password-123", "529.982.247-25",
+                AccountType.BUYER, null);
     }
 
     @Test
@@ -51,7 +52,7 @@ class AuthControllerTest {
                         .content(body("Ana", "ana@example.com", "password-123", "12345678900")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
-        verifyNoInteractions(service);
+        verifyNoInteractions(signupService);
     }
 
     @Test
@@ -59,7 +60,7 @@ class AuthControllerTest {
         mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
                         .content(body("Ana", "not-an-email", "short", "52998224725")))
                 .andExpect(status().isBadRequest());
-        verifyNoInteractions(service);
+        verifyNoInteractions(signupService);
     }
 
     @Test
@@ -178,5 +179,30 @@ class AuthControllerTest {
                             """))
                 .andExpect(status().isNoContent());
         verify(refreshTokenService).logout("some-token");
+    }
+
+    @Test
+    void shouldPassOrganizerDataToTheService() throws Exception {
+        mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"name":"Ana","email":"ana@example.com","password":"password-123",
+                             "cpf":"52998224725","accountType":"ORGANIZER","organizerName":"Rock Producoes"}
+                            """))
+                .andExpect(status().isAccepted());
+
+        verify(signupService).signup("Ana", "ana@example.com", "password-123", "52998224725",
+                AccountType.ORGANIZER, "Rock Producoes");
+    }
+
+    @Test
+    void shouldRejectAdminAsAccountType() throws Exception {
+        mvc.perform(post("/auth/signup").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"name":"Ana","email":"ana@example.com","password":"password-123",
+                             "cpf":"52998224725","accountType":"ADMIN"}
+                            """))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(signupService);
     }
 }

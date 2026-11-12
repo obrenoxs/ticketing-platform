@@ -41,7 +41,8 @@ class AuthController {
 
     @PostMapping("/signup")
     ResponseEntity<MessageResponse> signup(@Valid @RequestBody SignupRequest request) {
-        signupService.signup(request.name(), request.email(), request.password(), request.cpf());
+        signupService.signup(request.name(), request.email(), request.password(), request.cpf(),
+                request.resolvedAccountType(), request.organizerName());
         return ResponseEntity.accepted().body(SIGNUP_RESPONSE);
     }
 

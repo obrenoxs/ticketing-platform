@@ -2,8 +2,10 @@ package dev.obrenoxs.ticketing.auth.internal;
 
 import dev.obrenoxs.ticketing.auth.internal.domain.Account;
 import dev.obrenoxs.ticketing.auth.internal.domain.EmailVerificationToken;
+import dev.obrenoxs.ticketing.auth.internal.domain.OrganizerProfile;
 import dev.obrenoxs.ticketing.auth.internal.repository.AccountRepository;
 import dev.obrenoxs.ticketing.auth.internal.repository.EmailVerificationTokenRepository;
+import dev.obrenoxs.ticketing.auth.internal.repository.OrganizerProfileRepository;
 import dev.obrenoxs.ticketing.platform.api.DatabaseClock;
 import dev.obrenoxs.ticketing.platform.api.IdGenerator;
 import org.slf4j.Logger;
@@ -29,11 +31,21 @@ public class SignupService {
     private final EmailVerificationNotifier notifier;
     private final TransactionTemplate tx;
     private final AuthProperties properties;
+    private final OrganizerProfileRepository organizerProfiles;
 
-    SignupService(AccountRepository accounts, EmailVerificationTokenRepository tokens,
-                  PasswordHasher passwordHasher, CpfCipher cpfCipher, CpfBlindIndex cpfIndex,
-                  IdGenerator ids, DatabaseClock clock, EmailVerificationNotifier notifier,
-                  TransactionTemplate tx, AuthProperties properties) {
+    public SignupService(
+            AccountRepository accounts,
+            EmailVerificationTokenRepository tokens,
+            PasswordHasher passwordHasher,
+            CpfCipher cpfCipher,
+            CpfBlindIndex cpfIndex,
+            IdGenerator ids,
+            DatabaseClock clock,
+            EmailVerificationNotifier notifier,
+            TransactionTemplate tx,
+            AuthProperties properties,
+            OrganizerProfileRepository organizerProfiles
+    ) {
         this.accounts = accounts;
         this.tokens = tokens;
         this.passwordHasher = passwordHasher;
@@ -44,9 +56,17 @@ public class SignupService {
         this.notifier = notifier;
         this.tx = tx;
         this.properties = properties;
+        this.organizerProfiles = organizerProfiles;
     }
 
     public void signup(String name, String rawEmail, String rawPassword, String rawCpf) {
+        signup(name, rawEmail, rawPassword, rawCpf, AccountType.BUYER, null);
+    }
+
+    public void signup(String name, String rawEmail, String rawPassword, String rawCpf, AccountType type, String organizerName) {
+        if (type == AccountType.ORGANIZER && (organizerName == null || organizerName.isBlank())) {
+            throw new IllegalArgumentException("organizerName is required for organizer accounts.");
+        }
         Cpf cpf = Cpf.of(rawCpf);
         String email = Account.normalizeEmail(rawEmail);
 
@@ -63,15 +83,21 @@ public class SignupService {
         Instant now = clock.now();
 
         Account account = Account.register(ids.next(), email, name, passwordHash,
-                encryptedCpf.bytes(), encryptedCpf.keyVersion(), cpfHmac, now);
+                encryptedCpf.bytes(), encryptedCpf.keyVersion(), cpfHmac, now, type.role());
         EmailVerificationToken verification = new EmailVerificationToken(
                 ids.next(), account.getId(), OpaqueTokens.hash(token),
                 now.plus(properties.emailVerificationTtl()), now);
+        OrganizerProfile profile = type == AccountType.ORGANIZER
+                ? OrganizerProfile.request(account.getId(), organizerName, now)
+                : null;
 
         try {
             tx.executeWithoutResult(status -> {
                 accounts.saveAndFlush(account);
                 tokens.saveAndFlush(verification);
+                if (profile != null) {
+                    organizerProfiles.saveAndFlush(profile);
+                }
             });
         } catch (DataIntegrityViolationException e) {
             log.info("Signup ignored: concurrent registration of the same email or CPF.");
