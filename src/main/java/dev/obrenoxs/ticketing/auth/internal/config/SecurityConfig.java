@@ -8,6 +8,7 @@ import org.springframework.boot.security.autoconfigure.actuate.web.servlet.Endpo
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +19,7 @@ import org.springframework.security.oauth2.server.resource.web.DefaultBearerToke
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -34,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(bearerTokenResolver())

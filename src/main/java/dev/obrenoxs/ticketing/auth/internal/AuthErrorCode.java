@@ -6,7 +6,9 @@ public enum AuthErrorCode implements ErrorCode {
 
     INVALID_VERIFICATION_TOKEN(400),
     INVALID_CREDENTIALS(401),
-    INVALID_REFRESH_TOKEN(401);
+    INVALID_REFRESH_TOKEN(401),
+    ORGANIZER_NOT_FOUND(404),
+    ORGANIZER_ALREADY_DECIDED(409);
 
     private final int status;
 
