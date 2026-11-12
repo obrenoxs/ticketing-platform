@@ -23,12 +23,14 @@ class AuthController {
     private final EmailVerificationService verificationService;
     private final LoginService loginService;
     private final AccessTokenService accessTokenService;
+    private final RefreshTokenService refreshTokenService;
 
-    public AuthController(SignupService signupService, EmailVerificationService verificationService, LoginService loginService, AccessTokenService accessTokenService) {
+    public AuthController(SignupService signupService, EmailVerificationService verificationService, LoginService loginService, AccessTokenService accessTokenService, RefreshTokenService refreshTokenService) {
         this.signupService = signupService;
         this.verificationService = verificationService;
         this.loginService = loginService;
         this.accessTokenService = accessTokenService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @GetMapping("/verify-email")
@@ -45,9 +47,11 @@ class AuthController {
 
     @PostMapping("/login")
     @RateLimited(RateLimitPolicy.LOGIN)
-    ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthenticatedAccount account = loginService.login(request.email(), request.password());
-        return ResponseEntity.ok(LoginResponse.bearer(accessTokenService.issue(account)));
+        return ResponseEntity.ok(TokenResponse.of(
+                accessTokenService.issue(account),
+                refreshTokenService.issueForLogin(account.accountId())));
     }
 
     @GetMapping("/me")
@@ -55,5 +59,20 @@ class AuthController {
         return ResponseEntity.ok(new MeResponse(
                 UUID.fromString(jwt.getSubject()),
                 Role.valueOf(jwt.getClaimAsString(AccessTokenService.ROLE_CLAIM))));
+    }
+
+    @PostMapping("/refresh")
+    @RateLimited(RateLimitPolicy.LOGIN)
+    ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        RotationResult result = refreshTokenService.rotate(request.refreshToken());
+        return ResponseEntity.ok(TokenResponse.of(
+                accessTokenService.issue(result.account()), result.refreshToken()));
+    }
+
+    @PostMapping("/logout")
+    @RateLimited(RateLimitPolicy.LOGIN)
+    ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 }

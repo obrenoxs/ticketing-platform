@@ -24,8 +24,9 @@ class AuthControllerTest {
     private final EmailVerificationService verificationService = mock(EmailVerificationService.class);
     private final LoginService loginService = mock(LoginService.class);
     private final AccessTokenService accessTokenService = mock(AccessTokenService.class);
+    private final RefreshTokenService refreshTokenService = mock(RefreshTokenService.class);
     private final MockMvc mvc = MockMvcBuilders
-            .standaloneSetup(new AuthController(service, verificationService, loginService, accessTokenService))
+            .standaloneSetup(new AuthController(service, verificationService, loginService, accessTokenService, refreshTokenService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .build();
 
@@ -110,11 +111,13 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldReturn200WithTokenOnLogin() throws Exception {
+    void shouldReturnBothTokensOnLogin() throws Exception {
         AuthenticatedAccount account = new AuthenticatedAccount(UUID.randomUUID(), Role.BUYER);
-        IssuedAccessToken token = new IssuedAccessToken("jwt-value", Instant.parse("2026-11-11T12:15:00Z"));
+        IssuedAccessToken access = new IssuedAccessToken("jwt-value", Instant.parse("2026-11-11T12:15:00Z"));
+        IssuedRefreshToken refresh = new IssuedRefreshToken("refresh-value", Instant.parse("2026-11-26T12:00:00Z"));
         when(loginService.login("ana@example.com", "password-123")).thenReturn(account);
-        when(accessTokenService.issue(account)).thenReturn(token);
+        when(accessTokenService.issue(account)).thenReturn(access);
+        when(refreshTokenService.issueForLogin(account.accountId())).thenReturn(refresh);
 
         mvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -123,6 +126,57 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("jwt-value"))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresAt").exists());
+                .andExpect(jsonPath("$.refreshToken").value("refresh-value"));
+    }
+
+    @Test
+    void shouldReturnNewPairOnRefresh() throws Exception {
+        AuthenticatedAccount account = new AuthenticatedAccount(UUID.randomUUID(), Role.BUYER);
+        IssuedRefreshToken newRefresh = new IssuedRefreshToken("new-refresh", Instant.parse("2026-11-26T12:00:00Z"));
+        RotationResult rotation = new RotationResult(account, newRefresh);
+        IssuedAccessToken access = new IssuedAccessToken("new-jwt", Instant.parse("2026-11-11T12:15:00Z"));
+        when(refreshTokenService.rotate("old-refresh")).thenReturn(rotation);
+        when(accessTokenService.issue(account)).thenReturn(access);
+
+        mvc.perform(post("/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"refreshToken":"old-refresh"}
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new-jwt"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh"));
+    }
+
+    @Test
+    void shouldReturn401WhenRefreshTokenIsInvalid() throws Exception {
+        when(refreshTokenService.rotate(any())).thenThrow(new BusinessException(
+                AuthErrorCode.INVALID_REFRESH_TOKEN, "Invalid or expired refresh token."));
+
+        mvc.perform(post("/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"refreshToken":"whatever"}
+                            """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+    }
+
+    @Test
+    void shouldReturn400WhenRefreshBodyIsBlank() throws Exception {
+        mvc.perform(post("/auth/refresh").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"refreshToken":""}
+                            """))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    void shouldReturn204OnLogout() throws Exception {
+        mvc.perform(post("/auth/logout").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {"refreshToken":"some-token"}
+                            """))
+                .andExpect(status().isNoContent());
+        verify(refreshTokenService).logout("some-token");
     }
 }

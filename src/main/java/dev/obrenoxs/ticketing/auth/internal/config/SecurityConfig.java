@@ -2,6 +2,8 @@ package dev.obrenoxs.ticketing.auth.internal.config;
 
 import dev.obrenoxs.ticketing.auth.internal.AccessTokenService;
 import java.util.List;
+import java.util.Set;
+
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +13,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -28,8 +32,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/logout").permitAll()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(bearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
@@ -44,5 +51,15 @@ public class SecurityConfig {
             return List.<GrantedAuthority>of(new SimpleGrantedAuthority("ROLE_" + role));
         });
         return converter;
+    }
+
+    private static final Set<String> TOKENLESS_PATHS = Set.of(
+            "/auth/signup", "/auth/verify-email", "/auth/login", "/auth/refresh", "/auth/logout");
+
+    BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver standard = new DefaultBearerTokenResolver();
+        return request -> TOKENLESS_PATHS.contains(request.getRequestURI())
+                ? null
+                : standard.resolve(request);
     }
 }
