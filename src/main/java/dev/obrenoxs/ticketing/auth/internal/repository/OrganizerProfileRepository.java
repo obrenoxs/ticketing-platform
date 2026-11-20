@@ -46,4 +46,6 @@ public interface OrganizerProfileRepository extends JpaRepository<OrganizerProfi
                         @Param("adminId") UUID adminId,
                         @Param("reason") String reason,
                         @Param("now") Instant now);
+
+    boolean existsByIdAndStatus(UUID id, OrganizerStatus status);
 }
