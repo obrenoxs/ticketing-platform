@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
+                        .requestMatchers(EndpointRequest.to("health", "info", "prometheus")).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/verify-email").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
