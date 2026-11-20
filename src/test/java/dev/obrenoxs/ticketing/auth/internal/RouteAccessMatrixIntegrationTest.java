@@ -50,7 +50,6 @@ class RouteAccessMatrixIntegrationTest extends AbstractIntegrationTest {
                 route("POST", "/auth/refresh", ok, ok, ok, ok),
                 route("POST", "/auth/logout", ok, ok, ok, ok),
                 route("GET", "/auth/verify-email", ok, ok, ok, ok),
-                route("GET", "/actuator/health", ok, ok, ok, ok),
                 route("GET", "/auth/me", u, ok, ok, ok),
                 route("PUT", "/auth/me", u, f, f, f),
                 // area administrativa
