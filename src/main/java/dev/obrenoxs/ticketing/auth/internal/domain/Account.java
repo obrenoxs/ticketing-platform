@@ -75,6 +75,23 @@ public class Account extends AssignedIdEntity {
         return account;
     }
 
+    public static Account createAdmin(UUID id, String email, String name, String passwordHash,
+                                      byte[] cpfEncrypted, int cpfKeyVersion, byte[] cpfHmac,
+                                      Instant now) {
+        Account account = new Account(id);
+        account.email = normalizeEmail(email);
+        account.name = name.trim();
+        account.passwordHash = passwordHash;
+        account.role = Role.ADMIN;
+        account.status = AccountStatus.ACTIVE;
+        account.cpfEncrypted = cpfEncrypted;
+        account.cpfKeyVersion = (short) cpfKeyVersion;
+        account.cpfHmac = cpfHmac;
+        account.createdAt = now;
+        account.updatedAt = now;
+        return account;
+    }
+
     public void activate(Instant now) {
         if (status != AccountStatus.PENDING_EMAIL) {
             throw new IllegalStateException("Account is not waiting for email verification.");
